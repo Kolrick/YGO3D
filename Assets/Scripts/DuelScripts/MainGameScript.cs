@@ -1,9 +1,24 @@
 using UnityEngine;
 using System.Collections;
 using UnityEngine.SceneManagement;
+using UnityEngine.Networking;
 
 public class MainGameScript : MonoBehaviour
 {
+	//Game mode variables
+	[Tooltip("This mode means that this game is in the process of being debuged at the moment.")]
+	public bool DebugGame = false;
+	[Tooltip("This mode means that this game is fixed in a way to practice the game and mechanics (only Player1 gets this check).")]
+	public bool Situational = false;
+	[Tooltip("This mode means that this game is a normal multiplayer match (only Player1 and Player2 get this check).")]
+	public bool multiplayerGame = false;
+	[Tooltip("This mode means that this game is a normal AI match (only Player1 and AI (Player2) get this check).")]
+	public bool AIGame = false;
+	[Tooltip("This mode means that this game is being viewed by a spectator (Free roaming - Only other people get this check).")]
+	public bool SpectatingGame = false;
+
+	public OptionsScript options;
+
 	//Persistent variables
 	public Deck currentDeck;
 	public ExtraDeck currentExtraDeck;
@@ -415,6 +430,16 @@ public class MainGameScript : MonoBehaviour
 	//-------------------------------------------------------------------------STARTUP-----------------------------------------------------------------------------------------------
 	void Start()
 	{
+		//Find the OptionsManager
+		options = GameObject.Find("OptionsManager").GetComponent<OptionsScript>();
+
+		//Check the options if this is a multiplayer game
+		multiplayerGame = options.startedMultiplayerGame;
+
+		//Make sure that both players are active
+		player1.gameObject.SetActive(true);
+		player2.gameObject.SetActive(true);
+
 		//Making sure that both life points are set to 8000
 		player1.SetCurrentLifePoints(startingLifePointCount);
 		player2.SetCurrentLifePoints(startingLifePointCount);
@@ -1643,6 +1668,9 @@ public class MainGameScript : MonoBehaviour
 					//Wrong card, get rid of the menu (prevents cheating)
 					mouseHit.collider.gameObject.transform.parent.GetComponent<ContextMenuScript>().DestroyMenu();
 				}
+
+				//Reset the collisions
+				ResetCollisions();
 			}
 			//Else, If it is the overview plane...
 			else if(mouseHit.collider.gameObject.name == "OverviewP1" && Input.GetButtonDown("Fire1") && player1Turn && !movingSummonCard && !movingBattleChangeCard && !targetingMode)
@@ -2060,7 +2088,7 @@ public class MainGameScript : MonoBehaviour
 				//Hide the "Show hand" button
 				showHandP2.SetActive(false);
 				
-				//Turn on colliders
+				//Turn on collisions
 				for(int i = 0; i < player2.cardsInHand.Length && player2.cardsInHand[i] != null; i++)
 				{
 					player2.cardsInHand[i].gameObject.transform.GetChild(0).gameObject.GetComponent<MeshCollider>().enabled = true;
@@ -2086,7 +2114,7 @@ public class MainGameScript : MonoBehaviour
 				//Hide the "Hide hand" button
 				hideHandP2.SetActive(false);
 				
-				//Turn off the colliders
+				//Turn off collisions
 				for(int i = 0; i < player2.cardsInHand.Length && player2.cardsInHand[i] != null; i++)
 				{
 					player2.cardsInHand[i].gameObject.transform.GetChild(0).gameObject.GetComponent<MeshCollider>().enabled = false;
@@ -2168,6 +2196,9 @@ public class MainGameScript : MonoBehaviour
 					//Wrong card, get rid of the menu (prevents cheating)
 					mouseHit.collider.gameObject.transform.parent.GetComponent<ContextMenuScript>().DestroyMenu();
 				}
+
+				//Reset the collisions
+				ResetCollisions();
 			}
 			//Else, If it is the overview plane...
 			if(mouseHit.collider.gameObject.name == "OverviewP2" && Input.GetButtonDown("Fire1") && player2Turn && !movingSummonCard && !movingBattleChangeCard && !targetingMode)
@@ -2624,8 +2655,12 @@ public class MainGameScript : MonoBehaviour
 		//Loop for each of player1's cards
 		for(int i = 0; i < currentDeck.deck.Length; i++)
 		{
-			Material myNewMaterialFront = new Material(Shader.Find("Mobile/VertexLit"));
-			Material myNewMaterialBack = new Material(Shader.Find("Mobile/VertexLit"));
+			//Save these materials for testing
+			//Material myNewMaterialFront = new Material(Shader.Find("Mobile/VertexLit"));
+			//Material myNewMaterialBack = new Material(Shader.Find("Mobile/VertexLit"));
+
+			Material myNewMaterialFront = new Material(Shader.Find("Mobile/Unlit (Supports Lightmap)"));
+			Material myNewMaterialBack = new Material(Shader.Find("Mobile/Unlit (Supports Lightmap)"));
 			
 			GameObject cardClone = (GameObject)Instantiate(card, new Vector3(currentDeck.transform.position.x, currentDeck.transform.position.y + (i * globalIncrement), currentDeck.transform.position.z), Quaternion.Euler(270, 0, 0));
 			cardClone.name = "P1: " + i + ": " + currentDeck.deck[i].cardName;
@@ -2639,6 +2674,7 @@ public class MainGameScript : MonoBehaviour
 			cardClone.layer = 8;
 			cardClone.AddComponent<Rigidbody>();
 			cardClone.GetComponent<Rigidbody>().isKinematic = true;
+			cardClone.GetComponent<NetworkTransform>();
 			
 			GameObject cardCloneFront = cardClone.transform.GetChild(0).gameObject;
 			cardCloneFront.GetComponent<Renderer>().material = myNewMaterialFront;
@@ -2664,8 +2700,12 @@ public class MainGameScript : MonoBehaviour
 			//If this card slot is not null
 			if(currentExtraDeck.extraDeck[i] != null)
 			{
-				Material myNewMaterialFront = new Material(Shader.Find("Mobile/VertexLit"));
-				Material myNewMaterialBack = new Material(Shader.Find("Mobile/VertexLit"));
+				//Save these materials for testing
+				//Material myNewMaterialFront = new Material(Shader.Find("Mobile/VertexLit"));
+				//Material myNewMaterialBack = new Material(Shader.Find("Mobile/VertexLit"));
+
+				Material myNewMaterialFront = new Material(Shader.Find("Mobile/Unlit (Supports Lightmap)"));
+				Material myNewMaterialBack = new Material(Shader.Find("Mobile/Unlit (Supports Lightmap)"));
 				
 				GameObject cardClone = (GameObject)Instantiate(card, new Vector3(currentExtraDeck.transform.position.x, currentExtraDeck.transform.position.y + (i * globalIncrement), currentExtraDeck.transform.position.z), Quaternion.Euler(270, 0, 0));
 				cardClone.name = "P1 Extra: " + i + ": " + currentExtraDeck.extraDeck[i].cardName;
@@ -2679,6 +2719,7 @@ public class MainGameScript : MonoBehaviour
 				cardClone.layer = 8;
 				cardClone.AddComponent<Rigidbody>();
 				cardClone.GetComponent<Rigidbody>().isKinematic = true;
+				cardClone.GetComponent<NetworkTransform>();
 				
 				GameObject cardCloneFront = cardClone.transform.GetChild(0).gameObject;
 				cardCloneFront.GetComponent<Renderer>().material = myNewMaterialFront;
@@ -2701,8 +2742,12 @@ public class MainGameScript : MonoBehaviour
 		//Loop for each of player2's cards
 		for(int i = 0; i < currentDeckAI.deck.Length; i++)
 		{
-			Material myNewMaterialFront = new Material(Shader.Find("Mobile/VertexLit"));
-			Material myNewMaterialBack = new Material(Shader.Find("Mobile/VertexLit"));
+			//Save these materials for testing
+			//Material myNewMaterialFront = new Material(Shader.Find("Mobile/VertexLit"));
+			//Material myNewMaterialBack = new Material(Shader.Find("Mobile/VertexLit"));
+
+			Material myNewMaterialFront = new Material(Shader.Find("Mobile/Unlit (Supports Lightmap)"));
+			Material myNewMaterialBack = new Material(Shader.Find("Mobile/Unlit (Supports Lightmap)"));
 			
 			GameObject cardClone = (GameObject)Instantiate(card, new Vector3(currentDeckAI.transform.position.x, currentDeckAI.transform.position.y + (i * globalIncrement), currentDeckAI.transform.position.z), Quaternion.Euler(270, 180, 0));
 			cardClone.name = "P2: " + i + ": " + currentDeckAI.deck[i].cardName;
@@ -2716,6 +2761,7 @@ public class MainGameScript : MonoBehaviour
 			cardClone.layer = 15;
 			cardClone.AddComponent<Rigidbody>();
 			cardClone.GetComponent<Rigidbody>().isKinematic = true;
+			cardClone.GetComponent<NetworkTransform>();
 			
 			GameObject cardCloneFront = cardClone.transform.GetChild(0).gameObject;
 			cardCloneFront.GetComponent<Renderer>().material = myNewMaterialFront;
@@ -2741,8 +2787,12 @@ public class MainGameScript : MonoBehaviour
 			//If this card slot is not null
 			if(currentExtraDeckAI.extraDeck[i] != null)
 			{
-				Material myNewMaterialFront = new Material(Shader.Find("Mobile/VertexLit"));
-				Material myNewMaterialBack = new Material(Shader.Find("Mobile/VertexLit"));
+				//Save these materials for testing
+				//Material myNewMaterialFront = new Material(Shader.Find("Mobile/VertexLit"));
+				//Material myNewMaterialBack = new Material(Shader.Find("Mobile/VertexLit"));
+
+				Material myNewMaterialFront = new Material(Shader.Find("Mobile/Unlit (Supports Lightmap)"));
+				Material myNewMaterialBack = new Material(Shader.Find("Mobile/Unlit (Supports Lightmap)"));
 				
 				GameObject cardClone = (GameObject)Instantiate(card, new Vector3(currentExtraDeckAI.transform.position.x, currentExtraDeckAI.transform.position.y + (i * globalIncrement), currentExtraDeckAI.transform.position.z), Quaternion.Euler(270, 180, 0));
 				cardClone.name = "P2 Extra: " + i + ": " + currentExtraDeckAI.extraDeck[i].cardName;
@@ -2756,6 +2806,7 @@ public class MainGameScript : MonoBehaviour
 				cardClone.layer = 15;
 				cardClone.AddComponent<Rigidbody>();
 				cardClone.GetComponent<Rigidbody>().isKinematic = true;
+				cardClone.GetComponent<NetworkTransform>();
 				
 				GameObject cardCloneFront = cardClone.transform.GetChild(0).gameObject;
 				cardCloneFront.GetComponent<Renderer>().material = myNewMaterialFront;
@@ -3682,5 +3733,36 @@ public class MainGameScript : MonoBehaviour
 		string description = selectedCard.GetComponent<Card>().GetDescription();
 			
 		return "Description: " + description;
+	}
+
+	public void ResetCollisions()
+	{
+		//Turn off collisions (player 1)
+		for(int i = 0; i < player1.cardsInHand.Length && player1.cardsInHand[i] != null; i++)
+		{
+			player1.cardsInHand[i].gameObject.transform.GetChild(0).gameObject.GetComponent<MeshCollider>().enabled = false;
+			player1.cardsInHand[i].gameObject.transform.GetChild(1).gameObject.GetComponent<MeshCollider>().enabled = false;
+		}
+
+		//Turn on collisions (player 1)
+		for(int i = 0; i < player1.cardsInHand.Length && player1.cardsInHand[i] != null; i++)
+		{
+			player1.cardsInHand[i].gameObject.transform.GetChild(0).gameObject.GetComponent<MeshCollider>().enabled = true;
+			player1.cardsInHand[i].gameObject.transform.GetChild(1).gameObject.GetComponent<MeshCollider>().enabled = true;
+		}
+
+		//Turn off collisions (player 2)
+		for(int i = 0; i < player2.cardsInHand.Length && player2.cardsInHand[i] != null; i++)
+		{
+			player2.cardsInHand[i].gameObject.transform.GetChild(0).gameObject.GetComponent<MeshCollider>().enabled = false;
+			player2.cardsInHand[i].gameObject.transform.GetChild(1).gameObject.GetComponent<MeshCollider>().enabled = false;
+		}
+
+		//Turn on collisions (player 2)
+		for(int i = 0; i < player2.cardsInHand.Length && player2.cardsInHand[i] != null; i++)
+		{
+			player2.cardsInHand[i].gameObject.transform.GetChild(0).gameObject.GetComponent<MeshCollider>().enabled = true;
+			player2.cardsInHand[i].gameObject.transform.GetChild(1).gameObject.GetComponent<MeshCollider>().enabled = true;
+		}
 	}
 }
